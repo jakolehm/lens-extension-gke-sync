@@ -1,6 +1,6 @@
 # GKE Sync Lens Extension
 
-Automatically syncs projects and [GKE clusters](https://cloud.google.com/kubernetes-engine) from [Google Cloud Platform](https://cloud.google.com) using [gcloud](https://cloud.google.com/sdk/gcloud).
+Automatically syncs projects and [GKE clusters](https://cloud.google.com/kubernetes-engine) from [Google Cloud Platform](https://cloud.google.com) to [Lens](https://k8slens.dev) using [gcloud](https://cloud.google.com/sdk/gcloud).
 
 ## Installation
 
