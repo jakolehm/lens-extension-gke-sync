@@ -1,14 +1,11 @@
-import { LensMainExtension, Store } from "@k8slens/extensions";
+import { LensMainExtension, Catalog } from "@k8slens/extensions";
 import { exec } from "child_process";
 import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import * as yaml from "js-yaml";
-import { preferencesStore } from "./preferences-store";
-import { reaction } from "mobx";
-
-const workspaceStore = Store.workspaceStore;
-const clusterStore = Store.clusterStore;
+import { PreferencesStore } from "./preferences-store";
+import { action, observable, reaction, runInAction } from "mobx";
 
 type Project = {
   name: string;
@@ -31,22 +28,21 @@ type Kubeconfig = {
   "current-context": string;
 }
 
-const ownerRef = "gke-sync";
-
 export default class GkeMain extends LensMainExtension {
   syncTimer: NodeJS.Timeout;
   projects: Project[] = [];
+  clusters = observable.array<Catalog.KubernetesCluster>([]);
 
   async onActivate(): Promise<void> {
     console.log("GKE: activated");
-    await preferencesStore.loadExtension(this);
+    const preferencesStore = PreferencesStore.getInstanceOrCreate();
 
-    workspaceStore.workspacesList.filter((workspace) => workspace.ownerRef === ownerRef).forEach((workspace) => workspace.enabled = true);
-    clusterStore.clustersList.filter((cluster) => cluster.ownerRef === ownerRef).forEach((cluster) => cluster.enabled = true);
+    await preferencesStore.loadExtension(this);
 
     reaction(() => preferencesStore.gcloudPath, () => {
       this.projects = [];
     });
+    this.addCatalogSource("gke-clusters", this.clusters);
     this.syncClusters();
   }
 
@@ -54,30 +50,24 @@ export default class GkeMain extends LensMainExtension {
     if (this.syncTimer) {
       clearTimeout(this.syncTimer);
     }
-    workspaceStore.workspacesList.filter((workspace) => workspace.ownerRef === ownerRef).forEach((workspace) => workspace.enabled = false);
-    clusterStore.clustersList.filter((cluster) => cluster.ownerRef === ownerRef).forEach((cluster) => cluster.enabled = false);
 
-    if (clusterStore.activeCluster && clusterStore.activeCluster.ownerRef === ownerRef) {
-      clusterStore.activeClusterId = null;
-    }
-    if (workspaceStore.currentWorkspace.ownerRef === ownerRef) {
-      workspaceStore.setActive(null);
-    }
+    this.clusters.clear();
   }
 
-  async syncClusters(): Promise<void> {
+  @action async syncClusters(): Promise<void> {
     if (this.projects.length === 0) {
       this.projects = await this.getProjects();
     }
     console.log("GKE: syncing clusters");
+
+    const updatedClusters: Catalog.KubernetesCluster[] = [];
     try {
       const projects = await this.getProjects();
       for (const project of projects) {
         const clusters = await this.getClusters(project.projectId);
         if (clusters.length > 0) {
-          const workspace = this.ensureWorkspace(project);
           for (const cluster of clusters) {
-            await this.ensureCluster(workspace, cluster);
+            updatedClusters.push(await this.ensureCluster(project, cluster));
           }
         } else {
           const index = this.projects.indexOf(project);
@@ -86,14 +76,10 @@ export default class GkeMain extends LensMainExtension {
           }
         }
       }
+      this.clusters.replace(updatedClusters);
     } catch(error) {
       console.error("GKE: failed to sync with GKE", error);
-    } finally {
-      try {
-        await this.cleanup();
-      } catch(error) {
-        console.error("GKE: failed to do cleanup", error);
-      }
+      this.clusters.clear();
     }
 
     this.syncTimer = global.setTimeout(async () => {
@@ -101,71 +87,39 @@ export default class GkeMain extends LensMainExtension {
     }, 1000 * 60 * 3);
   }
 
-  private async cleanup() {
-    const gkeWorkspaces = workspaceStore.workspacesList.filter((workspace) => workspace.ownerRef === ownerRef)
-    const projects = this.projects;
-    for (const workspace of gkeWorkspaces) {
-      if (!projects.find((project) => project.projectId === workspace.id)) {
-        workspaceStore.removeWorkspace(workspace);
-      } else {
-        const gkeClusters = clusterStore.clustersList.filter((cluster) => cluster.workspace === workspace.id);
-        if (gkeClusters.length > 0) {
-          const clusters = await this.getClusters(workspace.id);
-          for(const cluster of gkeClusters) {
-            if (!clusters.find((c) => c.name === cluster.name)) {
-              clusterStore.removeCluster(cluster);
-            }
-          }
-        }
-      }
-    }
-  }
-
-  private ensureWorkspace(project: Project) {
-    let workspace = workspaceStore.workspacesList.find((workspace) => workspace.ownerRef === "gke" && workspace.id === project.projectId);
-    if (!workspace) {
-      workspace = new Store.Workspace({
-        name: `GKE: ${project.name}`,
-        ownerRef: ownerRef,
-        id: project.projectId
-      })
-      workspaceStore.addWorkspace(workspace);
-    }
-
-    workspace.enabled = true;
-
-    return workspace;
-  }
-
-  private async ensureCluster(workspace: Store.Workspace, gkeCluster: Cluster) {
+  private async ensureCluster(project: Project, gkeCluster: Cluster) {
     const clusterId = crypto.createHash("md5").update(gkeCluster.selfLink).digest("hex");
-    let cluster = clusterStore.clustersList.find((c) => c.workspace === workspace.id && c.id === clusterId);
-    const kubeConfigPath = path.join(await this.getExtensionFileFolder(), gkeCluster.endpoint);
 
+    const kubeConfigPath = path.join(await this.getExtensionFileFolder(), gkeCluster.endpoint);
     fs.closeSync(fs.openSync(kubeConfigPath, "w"));
-    await this.gcloud(["container", "clusters", "get-credentials", gkeCluster.name, "--zone", gkeCluster.zone, "--project", workspace.id], {
+    await this.gcloud(["container", "clusters", "get-credentials", gkeCluster.name, "--zone", gkeCluster.zone, "--project", project.projectId], {
       ...process.env,
       "KUBECONFIG": kubeConfigPath
     })
 
-    if (!cluster) {
-      const kubeconfig = yaml.safeLoad(fs.readFileSync(kubeConfigPath).toString()) as Kubeconfig;
+    const kubeconfig = yaml.safeLoad(fs.readFileSync(kubeConfigPath).toString()) as Kubeconfig;
 
-      cluster = new Store.Cluster({
-        id: clusterId,
-        preferences: {
-          clusterName: gkeCluster.name,
-        },
-        workspace: workspace.id,
-        ownerRef: ownerRef,
-        kubeConfigPath: kubeConfigPath,
-        contextName: kubeconfig["current-context"]
-      })
-      clusterStore.addCluster(cluster);
-    }
-    cluster.enabled = true;
-
-    return cluster;
+    return new Catalog.KubernetesCluster({
+      apiVersion: "entity.k8slens.dev/v1alpha1",
+      kind: "KubernetesCluster",
+      metadata: {
+        uid: clusterId,
+        name: gkeCluster.name,
+        source: "gke-sync",
+        labels: {
+          "zone": gkeCluster.zone,
+          "projectName": project.name,
+          "projectId": project.projectId
+        }
+      },
+      spec: {
+        kubeconfigPath: kubeConfigPath,
+        kubeconfigContext: kubeconfig["current-context"]
+      },
+      status: {
+        phase: "disconnected"
+      }
+    });
   }
 
   private async getProjects() {
@@ -179,7 +133,7 @@ export default class GkeMain extends LensMainExtension {
   }
 
   private async gcloud<T>(args: string[], env?: NodeJS.ProcessEnv): Promise<T[]> {
-    const gcloudBin = preferencesStore.gcloudPath || "gcloud";
+    const gcloudBin = PreferencesStore.getInstance().gcloudPath || "gcloud";
     return new Promise((resolve, reject) => {
       exec(`${gcloudBin} ${args.join(" ")} --format json`, {
         env: env ?? process.env

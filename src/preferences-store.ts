@@ -9,7 +9,7 @@ export class PreferencesStore extends Store.ExtensionStore<GkePreferencesModel> 
 
   @observable gcloudPath: string;
 
-  private constructor() {
+  public constructor() {
     super({
       configName: "preferences-store",
       defaults: {
@@ -30,5 +30,3 @@ export class PreferencesStore extends Store.ExtensionStore<GkePreferencesModel> 
     });
   }
 }
-
-export const preferencesStore = PreferencesStore.getInstance<PreferencesStore>();

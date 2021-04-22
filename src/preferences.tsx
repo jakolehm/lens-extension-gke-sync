@@ -4,9 +4,9 @@ import { observer } from "mobx-react";
 import { PreferencesStore } from "./preferences-store";
 
 @observer
-export class PreferenceInput extends React.Component<{preferences: PreferencesStore}> {
+export class PreferenceInput extends React.Component {
   render(): JSX.Element {
-    const { preferences } = this.props;
+    const preferences = PreferencesStore.getInstance();
 
     return (
       <>
