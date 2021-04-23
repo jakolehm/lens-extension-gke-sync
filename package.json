@@ -1,6 +1,6 @@
 {
   "name": "@jakolehm/lens-extension-gke-sync",
-  "version": "0.2.1",
+  "version": "0.3.0-alpha.0",
   "description": "GKE sync extension for Lens",
   "main": "dist/main.js",
   "renderer": "dist/renderer.js",
@@ -15,7 +15,7 @@
     "dev": "webpack --watch"
   },
   "devDependencies": {
-    "@k8slens/extensions": "file:../lens/src/extensions/npm/extensions",
+    "@k8slens/extensions": "^5.0.0-alpha.2",
     "@types/js-yaml": "^3.12.5",
     "@types/node": "^14.14.14",
     "@types/react": "^17.0.0",

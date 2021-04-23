@@ -5,7 +5,7 @@ import path from "path";
 import crypto from "crypto";
 import * as yaml from "js-yaml";
 import { PreferencesStore } from "./preferences-store";
-import { action, observable, reaction, runInAction } from "mobx";
+import { action, observable, reaction } from "mobx";
 
 type Project = {
   name: string;
@@ -35,7 +35,7 @@ export default class GkeMain extends LensMainExtension {
 
   async onActivate(): Promise<void> {
     console.log("GKE: activated");
-    const preferencesStore = PreferencesStore.getInstanceOrCreate();
+    const preferencesStore = PreferencesStore.createInstance();
 
     await preferencesStore.loadExtension(this);
 

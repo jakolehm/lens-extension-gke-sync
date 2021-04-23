@@ -29,6 +29,6 @@ export default class GkeRenderer extends LensRendererExtension {
   ];
 
   async onActivate(): Promise<void> {
-    await PreferencesStore.getInstanceOrCreate().loadExtension(this);
+    await PreferencesStore.createInstance().loadExtension(this);
   }
 }
