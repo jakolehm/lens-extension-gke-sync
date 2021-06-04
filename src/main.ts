@@ -1,4 +1,4 @@
-import { LensMainExtension, Catalog } from "@k8slens/extensions";
+import { Common, Main } from "@k8slens/extensions";
 import { exec } from "child_process";
 import fs from "fs";
 import path from "path";
@@ -28,10 +28,10 @@ type Kubeconfig = {
   "current-context": string;
 }
 
-export default class GkeMain extends LensMainExtension {
+export default class GkeMain extends Main.LensExtension {
   syncTimer: NodeJS.Timeout;
   projects: Project[] = [];
-  clusters = observable.array<Catalog.KubernetesCluster>([]);
+  clusters = observable.array<Common.Catalog.KubernetesCluster>([]);
 
   async onActivate(): Promise<void> {
     console.log("GKE: activated");
@@ -60,7 +60,7 @@ export default class GkeMain extends LensMainExtension {
     }
     console.log("GKE: syncing clusters");
 
-    const updatedClusters: Catalog.KubernetesCluster[] = [];
+    const updatedClusters: Common.Catalog.KubernetesCluster[] = [];
     try {
       const projects = await this.getProjects();
       for (const project of projects) {
@@ -99,9 +99,7 @@ export default class GkeMain extends LensMainExtension {
 
     const kubeconfig = yaml.safeLoad(fs.readFileSync(kubeConfigPath).toString()) as Kubeconfig;
 
-    return new Catalog.KubernetesCluster({
-      apiVersion: "entity.k8slens.dev/v1alpha1",
-      kind: "KubernetesCluster",
+    return new Common.Catalog.KubernetesCluster({
       metadata: {
         uid: clusterId,
         name: gkeCluster.name,

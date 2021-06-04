@@ -1,9 +1,9 @@
-import { LensRendererExtension, Component } from "@k8slens/extensions";
+import { Renderer } from "@k8slens/extensions";
 import React from "react";
 import { PreferencesStore } from "./preferences-store";
 import { PreferenceHint, PreferenceInput } from "./preferences"
 
-export default class GkeRenderer extends LensRendererExtension {
+export default class GkeRenderer extends Renderer.LensExtension {
   statusBarItems = [
     {
       item: (): JSX.Element => {
@@ -11,7 +11,7 @@ export default class GkeRenderer extends LensRendererExtension {
 
         return (
           <a title="Open Google Cloud Console" href="https://console.cloud.google.com/kubernetes/list" target="_blank" className="flex align-center gaps hover-highlight" style={ style}>
-            <Component.Icon material="cloud_queue" /> <span className="flex gaps">GKE</span>
+            <Renderer.Component.Icon material="cloud_queue" /> <span className="flex gaps">GKE</span>
           </a>
         )
       }
