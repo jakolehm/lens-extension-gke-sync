@@ -10,10 +10,7 @@ export class PreferencesStore extends Common.Store.ExtensionStore<GkePreferences
 
   public constructor() {
     super({
-      configName: "preferences-store",
-      defaults: {
-        enabled: true
-      }
+      configName: "preferences-store"
     });
 
     makeObservable(this);
