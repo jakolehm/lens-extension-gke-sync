@@ -6,4 +6,4 @@ Automatically syncs projects and [GKE clusters](https://cloud.google.com/kuberne
 
 > Prerequisites: working gcloud installation
 
-Download extension tgz package from [releases](https://github.com/jakolehm/lens-extension-gke-sync/releases) and install it to Lens. Extension starts to sync Google Cloud projects as Lens workspaces.
+Download extension tgz package from [releases](https://github.com/jakolehm/lens-extension-gke-sync/releases) and install it to Lens. Extension starts to sync GKE clusters to Lens Catalog.
