@@ -1,17 +1,17 @@
-import { Component } from "@k8slens/extensions";
+import { Renderer } from "@k8slens/extensions";
 import React from "react";
 import { observer } from "mobx-react";
 import { PreferencesStore } from "./preferences-store";
 
 @observer
-export class PreferenceInput extends React.Component<{preferences: PreferencesStore}> {
+export class PreferenceInput extends React.Component {
   render(): JSX.Element {
-    const { preferences } = this.props;
+    const preferences = PreferencesStore.getInstance();
 
     return (
       <>
         <div className="SubTitle">Path to gcloud binary</div>
-        <Component.Input
+        <Renderer.Component.Input
           value={preferences.gcloudPath}
           theme="round-black"
           placeholder="gcloud"

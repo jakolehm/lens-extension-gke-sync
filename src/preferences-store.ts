@@ -1,21 +1,19 @@
-import { Store } from "@k8slens/extensions";
-import { observable, toJS } from "mobx";
+import { Common } from "@k8slens/extensions";
+import { makeObservable, observable, toJS } from "mobx";
 
 export type GkePreferencesModel = {
   gcloudPath?: string;
 };
 
-export class PreferencesStore extends Store.ExtensionStore<GkePreferencesModel> {
-
+export class PreferencesStore extends Common.Store.ExtensionStore<GkePreferencesModel> {
   @observable gcloudPath: string;
 
-  private constructor() {
+  public constructor() {
     super({
-      configName: "preferences-store",
-      defaults: {
-        enabled: true
-      }
+      configName: "preferences-store"
     });
+
+    makeObservable(this);
   }
 
   protected fromStore({ gcloudPath }: GkePreferencesModel): void {
@@ -30,5 +28,3 @@ export class PreferencesStore extends Store.ExtensionStore<GkePreferencesModel> 
     });
   }
 }
-
-export const preferencesStore = PreferencesStore.getInstance<PreferencesStore>();
