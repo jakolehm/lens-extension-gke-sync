@@ -1,6 +1,6 @@
 {
   "name": "@jakolehm/lens-extension-gke-sync",
-  "version": "0.3.0-alpha.0",
+  "version": "0.3.0",
   "description": "GKE sync extension for Lens",
   "main": "dist/main.js",
   "renderer": "dist/renderer.js",
