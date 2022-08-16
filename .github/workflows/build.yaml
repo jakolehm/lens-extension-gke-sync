@@ -6,12 +6,12 @@ on:
   pull_request:
 
 env:
-  NODE_VERSION: '12.x'
+  NODE_VERSION: '16.x'
 
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
