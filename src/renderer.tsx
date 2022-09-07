@@ -11,7 +11,7 @@ export default class GkeRenderer extends Renderer.LensExtension {
 
         return (
           <a title="Open Google Cloud Console" href="https://console.cloud.google.com/kubernetes/list" target="_blank" className="flex align-center gaps hover-highlight" style={ style}>
-            <Renderer.Component.Icon material="cloud_queue" /> <span className="flex gaps">GKE</span>
+            <span className="flex gaps">GKE</span>
           </a>
         )
       }
